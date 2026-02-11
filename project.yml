@@ -1,0 +1,38 @@
+name: QuickCapture
+options:
+  bundleIdPrefix: com.quickcapture
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  QuickCapture:
+    type: application
+    platform: macOS
+    sources:
+      - path: QuickCapture
+        excludes:
+          - Resources/Assets.xcassets
+      - path: QuickCapture/Resources/Assets.xcassets
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.quickcapture.app
+        INFOPLIST_FILE: QuickCapture/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: QuickCapture/Resources/QuickCapture.entitlements
+        PRODUCT_NAME: QuickCapture
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        COMBINE_HIDPI_IMAGES: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: S4BS47942Q
+        PROVISIONING_PROFILE_SPECIFIER: ""
+        ENABLE_HARDENED_RUNTIME: false
