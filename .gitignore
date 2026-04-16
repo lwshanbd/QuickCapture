@@ -1,0 +1,12 @@
+# Claude Code local state (settings, skills, etc.)
+.claude/
+
+# Xcode / build artifacts
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
