@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 
 protocol SelectionViewDelegate: AnyObject {
     func selectionViewDidSelect(_ rect: SelectionRect)
@@ -11,6 +12,7 @@ final class SelectionView: NSView {
     weak var delegate: SelectionViewDelegate?
 
     private let backgroundImage: CGImage
+    private let sizeIndicatorFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .medium) as CTFont
     private var selection: SelectionRect?
     private var hasSelection = false
     private var lastClickInSelectionTime: TimeInterval = 0
@@ -96,20 +98,29 @@ final class SelectionView: NSView {
         let scale = screen.backingScaleFactor
         let w = Int(rect.width * scale)
         let h = Int(rect.height * scale)
-        let text = "\(w) × \(h)" as NSString
+        let characters = Array("\(w) × \(h)".utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: characters.count)
+        CTFontGetGlyphsForCharacters(sizeIndicatorFont, characters, &glyphs, characters.count)
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
-            .foregroundColor: NSColor.white
-        ]
-        let textSize = text.size(withAttributes: attributes)
+        // The numeric label needs no attributed-string layout. Drawing the glyphs
+        // directly avoids CoreText's ApplyFont attribute-copy exception on macOS 26.
+        var advances = [CGSize](repeating: .zero, count: glyphs.count)
+        let width = CTFontGetAdvancesForGlyphs(sizeIndicatorFont, .horizontal, glyphs, &advances, glyphs.count)
+        let ascent = CTFontGetAscent(sizeIndicatorFont)
+        let height = ceil(ascent + CTFontGetDescent(sizeIndicatorFont) + CTFontGetLeading(sizeIndicatorFont))
+        var positions = [CGPoint]()
+        var x: CGFloat = 0
+        for advance in advances {
+            positions.append(CGPoint(x: x, y: 0))
+            x += advance.width
+        }
         let padding: CGFloat = 6
 
         let bgRect = CGRect(
             x: rect.minX,
             y: rect.maxY + 4,
-            width: textSize.width + padding * 2,
-            height: textSize.height + padding * 2
+            width: width + padding * 2,
+            height: height + padding * 2
         )
 
         if bgRect.maxY <= bounds.height {
@@ -117,8 +128,13 @@ final class SelectionView: NSView {
             NSColor.black.withAlphaComponent(0.7).setFill()
             bgPath.fill()
 
-            let textPoint = CGPoint(x: bgRect.minX + padding, y: bgRect.minY + padding)
-            text.draw(at: textPoint, withAttributes: attributes)
+            context.saveGState()
+            context.translateBy(x: bgRect.minX + padding, y: bgRect.minY + padding + ascent)
+            context.scaleBy(x: 1, y: -1)
+            context.textMatrix = .identity
+            context.setFillColor(NSColor.white.cgColor)
+            CTFontDrawGlyphs(sizeIndicatorFont, glyphs, positions, glyphs.count, context)
+            context.restoreGState()
         }
     }
 
